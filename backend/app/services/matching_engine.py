@@ -22,8 +22,12 @@ def _preference_score(preference: StudentCoursePreference) -> float:
 def _interest_bonus(student: StudentProfile, course: Course) -> float:
     if not student.interests or not course.track:
         return 0.0
-    interests = set((student.interests or "").split(","))
-    return 15.0 if course.track.value in interests else 0.0
+    normalized_interests = {
+        interest.strip().lower()
+        for interest in student.interests.split(",")
+        if interest.strip()
+    }
+    return 15.0 if course.track.value.lower() in normalized_interests else 0.0
 
 
 def evaluate_candidate(student: StudentProfile, course: Course) -> float:
