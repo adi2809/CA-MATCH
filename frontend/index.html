@@ -1,281 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CA Match Platform</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <header class="app-header">
-      <div class="branding">
-        <span class="logo">🎓</span>
-        <h1>Course Assistant Matching</h1>
-      </div>
-      <nav class="nav-actions">
-        <button id="nav-login" class="ghost-button">Login</button>
-        <button id="nav-register" class="primary-button">Register</button>
-        <button id="nav-logout" class="ghost-button hidden">Logout</button>
-      </nav>
-    </header>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Match Platform - Columbia IEOR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
 
-    <main class="content">
-      <section id="auth-section" class="card-grid">
-        <article class="card" id="login-card">
-          <h2>Welcome Back</h2>
-          <p class="card-subtitle">Log in with your Columbia UNI credentials</p>
-          <form id="login-form" class="stack">
-            <label>
-              <span>UNI</span>
-              <input type="text" id="login-uni" required minlength="6" maxlength="7" />
-            </label>
-            <label>
-              <span>Password</span>
-              <input type="password" id="login-password" required minlength="8" />
-            </label>
-            <button type="submit" class="primary-button">Sign in</button>
-          </form>
-        </article>
+    <!-- ========================================================================
+         AUTHENTICATION SECTION
+         ======================================================================== -->
+    <section id="auth-section" class="active">
+        <div class="auth-container">
+            <h1 class="app-title">CA Match Platform</h1>
+            <p class="subtitle">Columbia IEOR Course Assistant Matching</p>
 
-        <article class="card" id="register-card">
-          <h2>Create an account</h2>
-          <p class="card-subtitle">New applicants and administrators can sign up</p>
-          <form id="register-form" class="stack">
-            <label>
-              <span>Email</span>
-              <input type="email" id="register-email" required />
-            </label>
-            <label>
-              <span>UNI</span>
-              <input type="text" id="register-uni" required minlength="6" maxlength="7" />
-            </label>
-            <label>
-              <span>Password</span>
-              <input type="password" id="register-password" required minlength="8" />
-            </label>
-            <label>
-              <span>Account type</span>
-              <select id="register-role">
-                <option value="student">Student</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </label>
-            <button type="submit" class="primary-button">Register</button>
-          </form>
-        </article>
-      </section>
-
-      <section id="student-dashboard" class="hidden">
-        <div class="dashboard-grid">
-          <article class="card wide">
-            <div class="card-header">
-              <h2>My Profile</h2>
-              <button id="refresh-profile" class="ghost-button">Refresh</button>
+            <!-- Login Card -->
+            <div id="login-card" class="card">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-uni">UNI</label>
+                        <input type="text" id="login-uni" required maxlength="7" 
+                               placeholder="e.g., ab1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="toggle-auth">
+                    Don't have an account? 
+                    <a href="#" id="nav-register">Register</a>
+                </p>
             </div>
-            <form id="profile-form" class="grid-two">
-              <label>
-                <span>Full name</span>
-                <input type="text" id="profile-full-name" placeholder="Jane Doe" />
-              </label>
-              <label>
-                <span>Degree program</span>
-                <input type="text" id="profile-degree" placeholder="MS Operations Research" />
-              </label>
-              <label>
-                <span>Level of study</span>
-                <select id="profile-level">
-                  <option value="">Select level</option>
-                  <option value="undergraduate">Undergraduate</option>
-                  <option value="masters">Masters</option>
-                </select>
-              </label>
-              <label>
-                <span>Areas of interest</span>
-                <select id="profile-interests" multiple size="5">
-                  <option value="Financial Engineering & Risk Management">Financial Engineering & Risk Management</option>
-                  <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
-                  <option value="Optimization">Optimization</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stochastic Modeling and Simulation">Stochastic Modeling and Simulation</option>
-                </select>
-              </label>
-              <label>
-                <span>Resume link</span>
-                <input type="url" id="profile-resume" placeholder="https://..." />
-              </label>
-              <label>
-                <span>Transcript link</span>
-                <input type="url" id="profile-transcript" placeholder="https://..." />
-              </label>
-              <label>
-                <span>Profile photo URL</span>
-                <input type="url" id="profile-photo" placeholder="https://..." />
-              </label>
-              <div class="profile-actions">
-                <button type="submit" class="primary-button">Save profile</button>
-              </div>
-            </form>
-          </article>
 
-          <article class="card wide">
-            <div class="card-header">
-              <h2>Course preferences</h2>
-              <button id="add-preference" class="ghost-button">Add preference</button>
+            <!-- Register Card -->
+            <div id="register-card" class="card" style="display: none;">
+                <h2>Register</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required 
+                               placeholder="your.email@columbia.edu">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-uni">UNI</label>
+                        <input type="text" id="register-uni" required maxlength="7" 
+                               placeholder="e.g., ab1234">
+                        <small>Format: 2 letters + 4 digits (e.g., ab1234)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="8"
+                               placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-role">Role</label>
+                        <select id="register-role" required>
+                            <option value="student">Student</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p class="toggle-auth">
+                    Already have an account? 
+                    <a href="#" id="nav-login">Login</a>
+                </p>
             </div>
-            <form id="preferences-form" class="stack"></form>
-            <button id="save-preferences" class="primary-button">Save preferences</button>
-          </article>
-
-          <article class="card wide">
-            <h2>Available courses</h2>
-            <table class="data-table" id="courses-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Track</th>
-                  <th>Vacancies</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
         </div>
-      </section>
+    </section>
 
-      <section id="admin-dashboard" class="hidden">
-        <div class="dashboard-grid">
-          <article class="card wide">
-            <div class="card-header">
-              <h2>Course management</h2>
-              <div class="actions">
-                <label class="file-upload">
-                  <input type="file" id="import-courses" accept=".csv" />
-                  <span>Bulk import CSV</span>
-                </label>
-              </div>
+    <!-- ========================================================================
+         STUDENT DASHBOARD
+         ======================================================================== -->
+    <section id="student-dashboard" class="dashboard">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-brand">CA Match - Student Portal</div>
+            <div class="navbar-menu">
+                <button id="student-nav-courses" class="nav-btn active">Available Courses</button>
+                <button id="student-nav-applications" class="nav-btn">My Applications</button>
+                <button id="nav-logout" class="btn btn-secondary">Logout</button>
             </div>
-            <form id="course-form" class="grid-two">
-              <label>
-                <span>Course code</span>
-                <input type="text" id="course-code" required />
-              </label>
-              <label>
-                <span>Title</span>
-                <input type="text" id="course-title" required />
-              </label>
-              <label>
-                <span>Instructor</span>
-                <input type="text" id="course-instructor" />
-              </label>
-              <label>
-                <span>Instructor email</span>
-                <input type="email" id="course-instructor-email" />
-              </label>
-              <label>
-                <span>Track</span>
-                <select id="course-track">
-                  <option value="">Select track</option>
-                  <option value="Financial Engineering & Risk Management">Financial Engineering & Risk Management</option>
-                  <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
-                  <option value="Optimization">Optimization</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stochastic Modeling and Simulation">Stochastic Modeling and Simulation</option>
-                </select>
-              </label>
-              <label>
-                <span>Vacancies</span>
-                <input type="number" id="course-vacancies" min="0" value="0" />
-              </label>
-              <label>
-                <span>Grade threshold</span>
-                <input type="text" id="course-grade" />
-              </label>
-              <label>
-                <span>Similar courses</span>
-                <input type="text" id="course-similar" />
-              </label>
-              <div class="profile-actions">
-                <button type="submit" class="primary-button">Save course</button>
-              </div>
-            </form>
-            <table class="data-table" id="admin-courses-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Track</th>
-                  <th>Vacancies</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
+        </nav>
 
-          <article class="card">
-            <h2>Matching engine</h2>
-            <p>Kick off a fresh assignment run respecting vacancies and student preferences.</p>
-            <button id="run-match" class="primary-button">Run matching</button>
-            <div id="match-status" class="status"></div>
-          </article>
+        <!-- Available Courses View -->
+        <div id="student-courses-view" class="content-section active">
+            <div class="container">
+                <h2>Available Courses</h2>
+                <p class="info-text">Browse and apply to courses you're interested in becoming a CA for</p>
 
-          <article class="card wide">
-            <h2>Assignments</h2>
-            <table class="data-table" id="assignments-table">
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>UNI</th>
-                  <th>Course</th>
-                  <th>Instructor</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
+                <div class="filter-bar">
+                    <label>Filter by Track:</label>
+                    <select id="student-track-filter">
+                        <option value="">All Tracks</option>
+                        <option value="Financial Engineering & Risk Management">Financial Engineering</option>
+                        <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
+                        <option value="Optimization">Optimization</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Stochastic Modeling and Simulation">Stochastic Modeling</option>
+                    </select>
+                </div>
 
-          <article class="card wide">
-            <h2>Communication</h2>
-            <form id="email-form" class="stack">
-              <label>
-                <span>Email subject</span>
-                <input type="text" id="email-subject" required />
-              </label>
-              <label>
-                <span>Message</span>
-                <textarea id="email-message" rows="5" required></textarea>
-              </label>
-              <label class="checkbox">
-                <input type="checkbox" id="email-cc" checked />
-                <span>CC instructors on emails</span>
-              </label>
-              <button type="submit" class="primary-button">Compose email summary</button>
-            </form>
-            <pre id="email-preview" class="code-block"></pre>
-          </article>
+                <div id="student-courses-grid" class="courses-grid"></div>
+            </div>
         </div>
-      </section>
-    </main>
 
-    <footer class="app-footer">
-      <p>Built for Columbia IEOR – streamline your CA matching workflow.</p>
-    </footer>
+        <!-- My Applications View -->
+        <div id="student-applications-view" class="content-section">
+            <div class="container">
+                <h2>My Applications</h2>
+                <p class="info-text">Drag to reorder your preferences (1 = highest priority)</p>
+                <div id="student-applications-list" class="applications-list"></div>
+            </div>
+        </div>
+    </section>
 
-    <div id="toast" class="toast hidden"></div>
+    <!-- ========================================================================
+         ADMIN DASHBOARD
+         ======================================================================== -->
+    <section id="admin-dashboard" class="dashboard">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-brand">CA Match - Admin Console</div>
+            <div class="navbar-menu">
+                <button id="admin-nav-dashboard" class="nav-btn active">Dashboard</button>
+                <button id="admin-nav-applications" class="nav-btn">Applications</button>
+                <button id="admin-nav-students" class="nav-btn">Students</button>
+                <button id="admin-nav-courses" class="nav-btn">Courses</button>
+                <button id="admin-nav-assignments" class="nav-btn">Assignments</button>
+                <button id="nav-logout-admin" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
 
-    <script src="app.js" type="module"></script>
-  </body>
+        <!-- Tab 1: Dashboard Overview -->
+        <div id="admin-dashboard-view" class="content-section active">
+            <div class="container">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-students">0</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-courses">0</div>
+                        <div class="stat-label">Total Courses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-applications">0</div>
+                        <div class="stat-label">Total Applications</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-highlighted">0</div>
+                        <div class="stat-label">Highlighted Apps</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-assignments">0</div>
+                        <div class="stat-label">Assignments</div>
+                    </div>
+                </div>
+
+                <!-- Alert for courses with no applications -->
+                <div id="courses-no-apps" class="alert-box" style="display: none;">
+                    <h3>⚠️ Courses with No Applications</h3>
+                    <ul id="courses-no-apps-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Applications Management -->
+        <div id="admin-applications-view" class="content-section">
+            <div class="container">
+                <h2>Applications Management</h2>
+
+                <!-- Search Section -->
+                <div class="search-section">
+                    <div class="search-bar">
+                        <select id="search-type">
+                            <option value="">Search All</option>
+                            <option value="student">Student (UNI/Name)</option>
+                            <option value="course">Course (Code/Title)</option>
+                        </select>
+                        <input type="text" id="search-input" 
+                               placeholder="Type to search... (e.g., ab1234 or John Smith or IEOR4500)">
+                        <button id="search-btn" class="btn btn-primary">Search</button>
+                    </div>
+                    <div class="search-filters">
+                        <label>
+                            <input type="checkbox" id="filter-highlighted"> 
+                            Show Highlighted Only
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Search Results (Quick Links) -->
+                <div id="search-results" class="search-results" style="display: none;"></div>
+
+                <!-- Applications Table -->
+                <div class="table-container">
+                    <table id="applications-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>UNI</th>
+                                <th>Course Code</th>
+                                <th>Course Title</th>
+                                <th>Rank</th>
+                                <th>Highlight</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Students -->
+        <div id="admin-students-view" class="content-section">
+            <div class="container">
+                <h2>Students</h2>
+                <p class="info-text">Click on any student to view their complete application profile</p>
+                <div id="students-list" class="list-container"></div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Courses Management -->
+        <div id="admin-courses-view" class="content-section">
+            <div class="container">
+                <h2>Courses Management</h2>
+
+                <div class="action-bar">
+                    <button id="show-add-course" class="btn btn-primary">+ Add Course</button>
+                    <label for="csv-upload" class="btn btn-secondary">📁 Import CSV</label>
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+                </div>
+
+                <!-- Add Course Form (Hidden by default) -->
+                <div id="add-course-form" class="form-card" style="display: none;">
+                    <h3>Add New Course</h3>
+                    <form id="course-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-code">Course Code*</label>
+                                <input type="text" id="course-code" required 
+                                       placeholder="e.g., IEOR4500">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-title">Title*</label>
+                                <input type="text" id="course-title" required
+                                       placeholder="e.g., Analytics in Practice">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-instructor">Instructor</label>
+                                <input type="text" id="course-instructor"
+                                       placeholder="Prof. Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-email">Instructor Email</label>
+                                <input type="email" id="course-email"
+                                       placeholder="instructor@columbia.edu">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-track">Track</label>
+                                <select id="course-track">
+                                    <option value="">None</option>
+                                    <option value="Financial Engineering & Risk Management">Financial Engineering</option>
+                                    <option value="Machine Learning & Analytics">ML & Analytics</option>
+                                    <option value="Optimization">Optimization</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Stochastic Modeling and Simulation">Stochastic Modeling</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="course-vacancies">Vacancies*</label>
+                                <input type="number" id="course-vacancies" min="0" required
+                                       placeholder="Number of CA positions">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Course</button>
+                            <button type="button" id="cancel-add-course" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Courses List -->
+                <div id="courses-list" class="list-container"></div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Assignments -->
+        <div id="admin-assignments-view" class="content-section">
+            <div class="container">
+                <h2>Assignments</h2>
+                <div class="action-bar">
+                    <button id="run-matching" class="btn btn-primary">🎯 Run Matching Engine</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="assignments-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>UNI</th>
+                                <th>Course</th>
+                                <th>Instructor</th>
+                                <th>Status</th>
+                                <th>Conflicts</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DETAIL PANEL (Slide-in from right)
+         ======================================================================== -->
+    <div id="detail-panel" class="detail-panel">
+        <div class="detail-panel-header">
+            <h3 id="detail-panel-title">Details</h3>
+            <button id="close-detail-panel" class="close-btn">&times;</button>
+        </div>
+        <div id="detail-panel-content" class="detail-panel-content">
+            <!-- Content populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         CONFLICT WARNING MODAL
+         ======================================================================== -->
+    <div id="conflict-modal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Highlight Conflicts Detected</h3>
+            <div id="conflict-modal-body">
+                <!-- Content populated by JavaScript -->
+            </div>
+            <div class="modal-actions">
+                <button id="conflict-assign-anyway" class="btn btn-primary">Assign Anyway</button>
+                <button id="conflict-cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
 </html>

@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Enum as SQLEnum,
     ForeignKey,
@@ -64,6 +65,7 @@ class StudentProfile(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
+
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
     degree_program: Mapped[Optional[str]] = mapped_column(String(255))
     level_of_study: Mapped[Optional[StudyLevel]] = mapped_column(
@@ -113,7 +115,10 @@ class StudentCoursePreference(Base, TimestampMixin):
     student_id: Mapped[int] = mapped_column(ForeignKey("student_profiles.id"))
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
-    track: Mapped[Optional[Track]] = mapped_column(SQLEnum(Track), nullable=True)
+
+    # NEW FIELD: For professor recommendations/highlighting
+    highlighted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     student: Mapped[StudentProfile] = relationship(back_populates="preferences")
     course: Mapped[Course] = relationship(back_populates="preferences")
@@ -136,4 +141,3 @@ class Assignment(Base, TimestampMixin):
 
     student: Mapped[StudentProfile] = relationship(back_populates="assignments")
     course: Mapped[Course] = relationship(back_populates="assignments")
-
