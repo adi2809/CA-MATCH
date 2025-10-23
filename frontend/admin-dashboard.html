@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Match - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Admin Dashboard -->
+    <section class="dashboard active">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-brand">CA Match - Admin Console</div>
+            <div class="navbar-menu">
+                <button id="admin-nav-dashboard" class="nav-btn active">Dashboard</button>
+                <button id="admin-nav-applications" class="nav-btn">Applications</button>
+                <button id="admin-nav-students" class="nav-btn">Students</button>
+                <button id="admin-nav-courses" class="nav-btn">Courses</button>
+                <button id="admin-nav-assignments" class="nav-btn">Assignments</button>
+                <button id="nav-logout" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Dashboard Overview -->
+        <div id="admin-dashboard-view" class="content-section active">
+            <div class="container">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-students">0</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-courses">0</div>
+                        <div class="stat-label">Total Courses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-applications">0</div>
+                        <div class="stat-label">Total Applications</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-highlighted">0</div>
+                        <div class="stat-label">Highlighted Apps</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-assignments">0</div>
+                        <div class="stat-label">Assignments</div>
+                    </div>
+                </div>
+                
+                <div id="courses-no-apps" class="alert-box" style="display: none;">
+                    <h3>⚠️ Courses with No Applications</h3>
+                    <ul id="courses-no-apps-list"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applications Management -->
+        <div id="admin-applications-view" class="content-section">
+            <div class="container">
+                <h2>Applications Management</h2>
+                
+                <div class="search-section">
+                    <div class="search-bar">
+                        <select id="search-type">
+                            <option value="">Search All</option>
+                            <option value="student">Student (UNI/Name)</option>
+                            <option value="course">Course (Code/Title)</option>
+                        </select>
+                        <input type="text" id="search-input" 
+                               placeholder="Type to search... (e.g., ab1234 or John Smith or IEOR4500)">
+                        <button id="search-btn" class="btn btn-primary">Search</button>
+                    </div>
+                    <div class="search-filters">
+                        <label>
+                            <input type="checkbox" id="filter-highlighted"> 
+                            Show Highlighted Only
+                        </label>
+                    </div>
+                </div>
+
+                <div id="search-results" class="search-results" style="display: none;"></div>
+
+                <div class="table-container">
+                    <table id="applications-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>UNI</th>
+                                <th>Course Code</th>
+                                <th>Course Title</th>
+                                <th>Rank</th>
+                                <th>Highlight</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students List -->
+        <div id="admin-students-view" class="content-section">
+            <div class="container">
+                <h2>Students</h2>
+                <p class="info-text">Click on any student to view their complete application profile</p>
+                <div id="students-list" class="list-container"></div>
+            </div>
+        </div>
+
+        <!-- Courses Management -->
+        <div id="admin-courses-view" class="content-section">
+            <div class="container">
+                <h2>Courses Management</h2>
+                
+                <div class="action-bar">
+                    <button id="show-add-course" class="btn btn-primary">+ Add Course</button>
+                    <label for="csv-upload" class="btn btn-secondary">📁 Import CSV</label>
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+                </div>
+
+                <div id="add-course-form" class="form-card" style="display: none;">
+                    <h3>Add New Course</h3>
+                    <form id="course-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-code">Course Code*</label>
+                                <input type="text" id="course-code" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="course-title">Title*</label>
+                                <input type="text" id="course-title" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-instructor">Instructor</label>
+                                <input type="text" id="course-instructor">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-email">Instructor Email</label>
+                                <input type="email" id="course-email">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course-track">Track</label>
+                                <select id="course-track">
+                                    <option value="">None</option>
+                                    <option value="Financial Engineering & Risk Management">Financial Engineering</option>
+                                    <option value="Machine Learning & Analytics">ML & Analytics</option>
+                                    <option value="Optimization">Optimization</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Stochastic Modeling and Simulation">Stochastic Modeling</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="course-vacancies">Vacancies*</label>
+                                <input type="number" id="course-vacancies" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Course</button>
+                            <button type="button" id="cancel-add-course" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="courses-list" class="list-container"></div>
+            </div>
+        </div>
+
+        <!-- Assignments -->
+        <div id="admin-assignments-view" class="content-section">
+            <div class="container">
+                <h2>Assignments</h2>
+                <div class="action-bar">
+                    <button id="run-matching" class="btn btn-primary">🎯 Run Matching Engine</button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="assignments-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>UNI</th>
+                                <th>Course</th>
+                                <th>Instructor</th>
+                                <th>Status</th>
+                                <th>Conflicts</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Detail Panel -->
+    <div id="detail-panel" class="detail-panel">
+        <div class="detail-panel-header">
+            <h3 id="detail-panel-title">Details</h3>
+            <button id="close-detail-panel" class="close-btn">&times;</button>
+        </div>
+        <div id="detail-panel-content" class="detail-panel-content"></div>
+    </div>
+
+    <!-- Conflict Modal -->
+    <div id="conflict-modal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Highlight Conflicts Detected</h3>
+            <div id="conflict-modal-body"></div>
+            <div class="modal-actions">
+                <button id="conflict-assign-anyway" class="btn btn-primary">Assign Anyway</button>
+                <button id="conflict-cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

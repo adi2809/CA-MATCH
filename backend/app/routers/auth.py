@@ -42,7 +42,8 @@ def login(
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect UNI or password")
     access_token = create_access_token(data={"sub": user.uni, "role": user.role})
-    return Token(access_token=access_token)
+    return Token(access_token=access_token, role=user.role)
+
 
 
 @router.get("/me", response_model=UserRead)

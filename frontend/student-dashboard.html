@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Match - Student Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Student Dashboard -->
+    <section class="dashboard active">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-brand">CA Match - Student Portal</div>
+            <div class="navbar-menu">
+                <button id="student-nav-courses" class="nav-btn active">Available Courses</button>
+                <button id="student-nav-applications" class="nav-btn">My Applications</button>
+                <button id="nav-logout" class="btn btn-secondary">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Available Courses View -->
+        <div id="student-courses-view" class="content-section active">
+            <div class="container">
+                <h2>Available Courses</h2>
+                <p class="info-text">Browse and apply to courses you're interested in becoming a CA for</p>
+
+                <div class="filter-bar">
+                    <label>Filter by Track:</label>
+                    <select id="student-track-filter">
+                        <option value="">All Tracks</option>
+                        <option value="Financial Engineering & Risk Management">Financial Engineering</option>
+                        <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
+                        <option value="Optimization">Optimization</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Stochastic Modeling and Simulation">Stochastic Modeling</option>
+                    </select>
+                </div>
+
+                <div id="student-courses-grid" class="courses-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- My Applications View -->
+        <div id="student-applications-view" class="content-section">
+            <div class="container">
+                <h2>My Applications</h2>
+                <p class="info-text">Drag to reorder your preferences (1 = highest priority)</p>
+                <div id="student-applications-list" class="applications-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="student.js"></script>
+</body>
+</html>
