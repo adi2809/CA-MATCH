@@ -45,6 +45,8 @@ class StudentProfileBase(BaseModel):
     resume_path: Optional[str]
     transcript_path: Optional[str]
     photo_url: Optional[str]
+    resume_text: Optional[str]
+    transcript_text: Optional[str]
 
 
 class StudentProfileCreate(StudentProfileBase):
@@ -85,6 +87,9 @@ class StudentCoursePreferenceBase(BaseModel):
     course_id: int
     rank: int
     track: Optional[Track]
+    faculty_requested: bool = False
+    grade_in_course: Optional[str]
+    basket_grade_average: Optional[str]
 
 
 class StudentCoursePreferenceCreate(StudentCoursePreferenceBase):

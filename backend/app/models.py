@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Enum as SQLEnum,
     ForeignKey,
@@ -73,6 +74,8 @@ class StudentProfile(Base, TimestampMixin):
     resume_path: Mapped[Optional[str]] = mapped_column(String(512))
     transcript_path: Mapped[Optional[str]] = mapped_column(String(512))
     photo_url: Mapped[Optional[str]] = mapped_column(String(512))
+    resume_text: Mapped[Optional[str]] = mapped_column(Text)
+    transcript_text: Mapped[Optional[str]] = mapped_column(Text)
 
     user: Mapped[User] = relationship(back_populates="student_profile")
     preferences: Mapped[List["StudentCoursePreference"]] = relationship(
@@ -114,6 +117,9 @@ class StudentCoursePreference(Base, TimestampMixin):
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     track: Mapped[Optional[Track]] = mapped_column(SQLEnum(Track), nullable=True)
+    faculty_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    grade_in_course: Mapped[Optional[str]] = mapped_column(String(32))
+    basket_grade_average: Mapped[Optional[str]] = mapped_column(String(32))
 
     student: Mapped[StudentProfile] = relationship(back_populates="preferences")
     course: Mapped[Course] = relationship(back_populates="preferences")
