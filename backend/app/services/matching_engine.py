@@ -6,6 +6,8 @@ from typing import Iterable, List, Tuple
 from sqlalchemy.orm import Session
 
 from ..models import Assignment, Course, StudentCoursePreference, StudentProfile
+from ..services.feedback import normalize_rating
+from ..services.skill_graph import skill_miner
 
 
 @dataclass
@@ -30,16 +32,91 @@ def _interest_bonus(student: StudentProfile, course: Course) -> float:
     return 15.0 if course.track.value.lower() in normalized_interests else 0.0
 
 
+def _feedback_score(student: StudentProfile, course: Course) -> float:
+    feedback_entries = getattr(student, "instructor_feedback", []) or []
+    course_specific = [
+        normalize_rating(entry.rating)
+        for entry in feedback_entries
+        if entry.course_id == course.id
+    ]
+    if course_specific:
+        return sum(course_specific) / len(course_specific)
+
+    overall = [normalize_rating(entry.rating) for entry in feedback_entries]
+    if overall:
+        return sum(overall) / len(overall) * 0.5
+    return 0.0
+
+
+GRADE_SCALE = {
+    "A+": 4.33,
+    "A": 4.0,
+    "A-": 3.67,
+    "B+": 3.33,
+    "B": 3.0,
+    "B-": 2.67,
+    "C+": 2.33,
+    "C": 2.0,
+    "C-": 1.67,
+    "D": 1.0,
+    "F": 0.0,
+}
+
+
+def _grade_to_score(raw_grade: str | None) -> float:
+    if raw_grade is None:
+        return 0.0
+    if isinstance(raw_grade, str):
+        value = raw_grade.strip().upper()
+        if not value:
+            return 0.0
+        if value in GRADE_SCALE:
+            numeric = GRADE_SCALE[value]
+        else:
+            try:
+                numeric = float(value)
+            except ValueError:
+                return 0.0
+    else:
+        numeric = float(raw_grade)
+
+    if numeric <= 4.33:
+        return max(0.0, min(100.0, (numeric / 4.33) * 100))
+    if numeric <= 100:
+        return max(0.0, min(100.0, numeric))
+    return 100.0
+
+
 def evaluate_candidate(student: StudentProfile, course: Course) -> float:
     preference = next(
         (pref for pref in student.preferences if pref.course_id == course.id),
         None,
     )
-    base_score = _preference_score(preference) if preference else 40.0
+    preference_score = _preference_score(preference) if preference else 0.0
     track_bonus = _interest_bonus(student, course)
 
-    application_bonus = 5.0 if student.resume_path and student.transcript_path else 0.0
-    return base_score + track_bonus + application_bonus
+    application_bonus = 5.0 if student.resume_text or student.transcript_text else 0.0
+    skill_match = skill_miner.score_match(student, course)
+    instructor_feedback_score = _feedback_score(student, course)
+
+    faculty_priority = 1.0 if preference and preference.faculty_requested else 0.0
+    course_grade = _grade_to_score(preference.grade_in_course) if preference else 0.0
+    basket_grade = (
+        _grade_to_score(preference.basket_grade_average) if preference else 0.0
+    )
+
+    # Compose a single score while respecting lexicographic priority ordering
+    score = (
+        faculty_priority * 1_000_000_000_000
+        + course_grade * 1_000_000_000
+        + basket_grade * 1_000_000
+        + preference_score * 1_000
+        + skill_match.weighted_score * 100
+        + instructor_feedback_score * 10
+        + track_bonus
+        + application_bonus
+    )
+    return score
 
 
 def run_matching(db: Session, *, course_ids: Iterable[int] | None = None) -> Tuple[List[Assignment], List[int]]:

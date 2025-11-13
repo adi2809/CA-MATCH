@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Enum as SQLEnum,
     ForeignKey,
@@ -73,12 +74,18 @@ class StudentProfile(Base, TimestampMixin):
     resume_path: Mapped[Optional[str]] = mapped_column(String(512))
     transcript_path: Mapped[Optional[str]] = mapped_column(String(512))
     photo_url: Mapped[Optional[str]] = mapped_column(String(512))
+    resume_text: Mapped[Optional[str]] = mapped_column(Text)
+    transcript_text: Mapped[Optional[str]] = mapped_column(Text)
+    skill_keywords: Mapped[Optional[str]] = mapped_column(Text)
 
     user: Mapped[User] = relationship(back_populates="student_profile")
     preferences: Mapped[List["StudentCoursePreference"]] = relationship(
         back_populates="student", cascade="all, delete-orphan"
     )
     assignments: Mapped[List["Assignment"]] = relationship(back_populates="student")
+    instructor_feedback: Mapped[List["InstructorFeedback"]] = relationship(
+        back_populates="student"
+    )
 
 
 class Course(Base, TimestampMixin):
@@ -94,12 +101,16 @@ class Course(Base, TimestampMixin):
     vacancies: Mapped[int] = mapped_column(Integer, default=0)
     grade_threshold: Mapped[Optional[str]] = mapped_column(String(32))
     similar_courses: Mapped[Optional[str]] = mapped_column(Text)
+    competency_matrix: Mapped[Optional[str]] = mapped_column(Text)
 
     preferences: Mapped[List["StudentCoursePreference"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
     )
     assignments: Mapped[List["Assignment"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
+    )
+    instructor_feedback: Mapped[List["InstructorFeedback"]] = relationship(
+        back_populates="course"
     )
 
 
@@ -114,6 +125,9 @@ class StudentCoursePreference(Base, TimestampMixin):
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     track: Mapped[Optional[Track]] = mapped_column(SQLEnum(Track), nullable=True)
+    faculty_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    grade_in_course: Mapped[Optional[str]] = mapped_column(String(32))
+    basket_grade_average: Mapped[Optional[str]] = mapped_column(String(32))
 
     student: Mapped[StudentProfile] = relationship(back_populates="preferences")
     course: Mapped[Course] = relationship(back_populates="preferences")
@@ -136,4 +150,23 @@ class Assignment(Base, TimestampMixin):
 
     student: Mapped[StudentProfile] = relationship(back_populates="assignments")
     course: Mapped[Course] = relationship(back_populates="assignments")
+    feedback_entries: Mapped[List["InstructorFeedback"]] = relationship(
+        back_populates="assignment", cascade="all, delete-orphan"
+    )
+
+
+class InstructorFeedback(Base, TimestampMixin):
+    __tablename__ = "instructor_feedback"
+    __table_args__ = (UniqueConstraint("assignment_id", name="uq_feedback_assignment"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"))
+    student_id: Mapped[int] = mapped_column(ForeignKey("student_profiles.id"))
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    comments: Mapped[Optional[str]] = mapped_column(Text)
+
+    assignment: Mapped[Assignment] = relationship(back_populates="feedback_entries")
+    student: Mapped[StudentProfile] = relationship(back_populates="instructor_feedback")
+    course: Mapped[Course] = relationship(back_populates="instructor_feedback")
 

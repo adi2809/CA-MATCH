@@ -13,6 +13,8 @@ from ..schemas import (
     StudentProfileCreate,
     StudentProfileRead,
 )
+from ..services.document_ocr import extract_text_from_document
+from ..services.skill_graph import skill_miner
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -45,6 +47,13 @@ def update_profile(
     profile.interests = ",".join(interest_values)
     profile.resume_path = profile_in.resume_path
     profile.transcript_path = profile_in.transcript_path
+    profile.resume_text = _extract_or_clear(profile_in.resume_path)
+    profile.transcript_text = _extract_or_clear(profile_in.transcript_path)
+    extracted_keywords = skill_miner.extract_keywords_from_texts(
+        profile.resume_text,
+        profile.transcript_text,
+    )
+    profile.skill_keywords = skill_miner.serialize_keywords(extracted_keywords)
     profile.photo_url = profile_in.photo_url
     db.add(profile)
     db.commit()
@@ -79,6 +88,9 @@ def set_preferences(
             course_id=course.id,
             rank=pref_in.rank,
             track=pref_in.track or course.track,
+            faculty_requested=pref_in.faculty_requested,
+            grade_in_course=pref_in.grade_in_course,
+            basket_grade_average=pref_in.basket_grade_average,
         )
         db.add(preference)
         saved.append(preference)
@@ -127,5 +139,20 @@ def _to_schema(profile: StudentProfile) -> StudentProfileRead:
         resume_path=profile.resume_path,
         transcript_path=profile.transcript_path,
         photo_url=profile.photo_url,
+        resume_text=profile.resume_text,
+        transcript_text=profile.transcript_text,
+        skill_keywords=sorted(skill_miner.deserialize_keywords(profile.skill_keywords)),
     )
+
+
+def _extract_or_clear(path: str | None) -> str | None:
+    if not path:
+        return None
+    try:
+        text = extract_text_from_document(path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return text
 
