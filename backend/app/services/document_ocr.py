@@ -1,6 +1,7 @@
-"""Utility helpers to perform lightweight OCR/text extraction on uploaded documents."""
+"""Utility helpers to perform text extraction on uploaded PDF documents."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 try:  # pragma: no cover - optional dependency
@@ -8,55 +9,64 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - fallback when pdfminer isn't available
     pdf_extract_text = None  # type: ignore
 
-try:  # pragma: no cover - optional dependency
-    from PIL import Image
-except Exception:  # pragma: no cover
-    Image = None  # type: ignore
+SUPPORTED_EXTENSIONS = {".pdf"}
+_TEXT_BLOCK_PATTERN = re.compile(rb"BT(.*?)ET", re.DOTALL)
+_STRING_PATTERN = re.compile(rb"\(([^()]*)\)")
 
-try:  # pragma: no cover - optional dependency
-    import pytesseract
-except Exception:  # pragma: no cover
-    pytesseract = None  # type: ignore
 
-TEXT_EXTENSIONS = {".txt", ".md", ".rtf"}
-PDF_EXTENSIONS = {".pdf"}
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
+class PDFTextExtractionError(ValueError):
+    """Raised when a PDF cannot be parsed by any of the supported backends."""
+
+
+def _extract_with_pdfminer(path: Path) -> str:
+    if pdf_extract_text is None:
+        raise PDFTextExtractionError("PDF support is unavailable; install pdfminer.six")
+
+    text = pdf_extract_text(str(path))
+    return text.strip()
+
+
+def _extract_with_fallback(path: Path) -> str:
+    raw = path.read_bytes()
+    segments: list[str] = []
+    for block in _TEXT_BLOCK_PATTERN.findall(raw):
+        for match in _STRING_PATTERN.finditer(block):
+            fragment = match.group(1)
+            if not fragment:
+                continue
+            decoded = (
+                fragment.decode("utf-8", errors="ignore")
+                .replace(r"\(", "(")
+                .replace(r"\)", ")")
+                .replace(r"\\", "\\")
+            )
+            if decoded:
+                segments.append(decoded)
+    return "\n".join(segments).strip()
 
 
 def extract_text_from_document(file_path: str | Path) -> str:
-    """Return extracted text from the provided document path.
-
-    The helper attempts to read plain text files directly, extract text from PDFs
-    when ``pdfminer.six`` is available, and falls back to ``pytesseract`` for
-    common image formats. Missing files or unsupported formats raise a
-    ``ValueError`` to simplify upstream error handling.
-    """
+    """Return extracted text from the provided PDF path."""
 
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"Document not found: {path}")
 
     suffix = path.suffix.lower()
+    if suffix not in SUPPORTED_EXTENSIONS:
+        raise ValueError("Only PDF documents are supported for OCR")
 
-    if suffix in TEXT_EXTENSIONS:
-        return path.read_text(encoding="utf-8", errors="ignore").strip()
+    text = ""
+    if pdf_extract_text is not None:
+        try:
+            text = _extract_with_pdfminer(path)
+        except PDFTextExtractionError:
+            text = ""
 
-    if suffix in PDF_EXTENSIONS:
-        if pdf_extract_text is None:
-            raise ValueError("PDF support is unavailable; install pdfminer.six")
-        text = pdf_extract_text(str(path))
-        return text.strip()
+    if not text:
+        text = _extract_with_fallback(path)
 
-    if suffix in IMAGE_EXTENSIONS:
-        if pytesseract is None or Image is None:
-            raise ValueError("Image OCR requires pillow and pytesseract")
-        with Image.open(path) as image:
-            text = pytesseract.image_to_string(image)
-        return text.strip()
+    if text:
+        return text
 
-    # Fallback: attempt to decode as UTF-8 regardless of extension.
-    raw = path.read_bytes()
-    decoded = raw.decode("utf-8", errors="ignore").strip()
-    if not decoded:
-        raise ValueError(f"Unsupported document format: {suffix or 'unknown'}")
-    return decoded
+    raise PDFTextExtractionError("Unable to extract text from PDF document")

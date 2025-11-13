@@ -14,6 +14,7 @@ from ..schemas import (
     StudentProfileRead,
 )
 from ..services.document_ocr import extract_text_from_document
+from ..services.skill_graph import skill_miner
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -48,6 +49,11 @@ def update_profile(
     profile.transcript_path = profile_in.transcript_path
     profile.resume_text = _extract_or_clear(profile_in.resume_path)
     profile.transcript_text = _extract_or_clear(profile_in.transcript_path)
+    extracted_keywords = skill_miner.extract_keywords_from_texts(
+        profile.resume_text,
+        profile.transcript_text,
+    )
+    profile.skill_keywords = skill_miner.serialize_keywords(extracted_keywords)
     profile.photo_url = profile_in.photo_url
     db.add(profile)
     db.commit()
@@ -135,6 +141,7 @@ def _to_schema(profile: StudentProfile) -> StudentProfileRead:
         photo_url=profile.photo_url,
         resume_text=profile.resume_text,
         transcript_text=profile.transcript_text,
+        skill_keywords=sorted(skill_miner.deserialize_keywords(profile.skill_keywords)),
     )
 
 

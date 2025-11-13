@@ -6,6 +6,8 @@ from typing import Iterable, List, Tuple
 from sqlalchemy.orm import Session
 
 from ..models import Assignment, Course, StudentCoursePreference, StudentProfile
+from ..services.feedback import normalize_rating
+from ..services.skill_graph import skill_miner
 
 
 @dataclass
@@ -28,6 +30,22 @@ def _interest_bonus(student: StudentProfile, course: Course) -> float:
         if interest.strip()
     }
     return 15.0 if course.track.value.lower() in normalized_interests else 0.0
+
+
+def _feedback_score(student: StudentProfile, course: Course) -> float:
+    feedback_entries = getattr(student, "instructor_feedback", []) or []
+    course_specific = [
+        normalize_rating(entry.rating)
+        for entry in feedback_entries
+        if entry.course_id == course.id
+    ]
+    if course_specific:
+        return sum(course_specific) / len(course_specific)
+
+    overall = [normalize_rating(entry.rating) for entry in feedback_entries]
+    if overall:
+        return sum(overall) / len(overall) * 0.5
+    return 0.0
 
 
 GRADE_SCALE = {
@@ -78,6 +96,8 @@ def evaluate_candidate(student: StudentProfile, course: Course) -> float:
     track_bonus = _interest_bonus(student, course)
 
     application_bonus = 5.0 if student.resume_text or student.transcript_text else 0.0
+    skill_match = skill_miner.score_match(student, course)
+    instructor_feedback_score = _feedback_score(student, course)
 
     faculty_priority = 1.0 if preference and preference.faculty_requested else 0.0
     course_grade = _grade_to_score(preference.grade_in_course) if preference else 0.0
@@ -87,10 +107,12 @@ def evaluate_candidate(student: StudentProfile, course: Course) -> float:
 
     # Compose a single score while respecting lexicographic priority ordering
     score = (
-        faculty_priority * 1_000_000_000
-        + course_grade * 1_000_000
-        + basket_grade * 1_000
-        + preference_score
+        faculty_priority * 1_000_000_000_000
+        + course_grade * 1_000_000_000
+        + basket_grade * 1_000_000
+        + preference_score * 1_000
+        + skill_match.weighted_score * 100
+        + instructor_feedback_score * 10
         + track_bonus
         + application_bonus
     )

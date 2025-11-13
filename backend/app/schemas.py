@@ -47,6 +47,7 @@ class StudentProfileBase(BaseModel):
     photo_url: Optional[str]
     resume_text: Optional[str]
     transcript_text: Optional[str]
+    skill_keywords: Optional[List[str]] = None
 
 
 class StudentProfileCreate(StudentProfileBase):
@@ -70,6 +71,7 @@ class CourseBase(BaseModel):
     vacancies: int = 0
     grade_threshold: Optional[str]
     similar_courses: Optional[str]
+    competency_matrix: Optional[str]
 
 
 class CourseCreate(CourseBase):
@@ -139,6 +141,32 @@ class MatchRequest(BaseModel):
 class MatchResult(BaseModel):
     assignments: List[AssignmentDetails]
     skipped_students: List[int]
+
+
+class InstructorFeedbackBase(BaseModel):
+    assignment_id: int
+    student_id: int
+    course_id: int
+    rating: int = Field(ge=1, le=5)
+    comments: Optional[str]
+
+
+class InstructorFeedbackCreate(InstructorFeedbackBase):
+    pass
+
+
+class InstructorFeedbackRead(InstructorFeedbackBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class InstructorFeedbackSummary(BaseModel):
+    course_id: int
+    average_rating: Optional[float]
+    review_count: int
+    comments: List[str]
 
 
 class EmailPayload(BaseModel):

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
-from .routers import admin, auth, students
+from .routers import admin, auth, feedback, students
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(students.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(feedback.router, prefix="/api")
 
 
 @app.get("/api/health")
