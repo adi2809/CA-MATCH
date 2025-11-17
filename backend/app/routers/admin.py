@@ -53,7 +53,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), _: None = Depends(get_cur
 # SEARCH
 @router.get("/search", response_model=List[SearchResult])
 def search(
-    q: str = Query(..., min_length=1),
+    q: str = Query("", min_length=0),  # Allow empty string
     search_type: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     _: None = Depends(get_current_admin),
@@ -61,31 +61,58 @@ def search(
     results = []
     
     if search_type == "student" or search_type is None:
-        students = db.query(StudentProfile).join(User).filter(
-            or_(User.uni.ilike(f"%{q}%"), StudentProfile.full_name.ilike(f"%{q}%"))
-        ).options(joinedload(StudentProfile.user)).limit(20).all()
+        # Build query
+        query = db.query(StudentProfile).join(User).options(
+            joinedload(StudentProfile.user),
+            joinedload(StudentProfile.preferences)
+        )
+        
+        # Apply filter only if q is not empty
+        if q and q.strip():
+            query = query.filter(
+                or_(User.uni.ilike(f"%{q}%"), StudentProfile.full_name.ilike(f"%{q}%"))
+            )
+        
+        students = query.all()  # Removed .limit(100) - get all students
         
         for student in students:
+            try:
+                app_count = len(student.preferences) if student.preferences else 0
+            except:
+                app_count = 0
+                
             results.append(SearchResult(
                 result_type="student",
                 id=student.id,
-                display_name=student.full_name or "No name",
-                secondary_info=student.user.uni,
-                application_count=len(student.preferences)
+                display_name=student.full_name or "[First Last]",
+                secondary_info=student.user.uni if student.user else "Unknown",
+                application_count=app_count
             ))
     
     if search_type == "course" or search_type is None:
-        courses = db.query(Course).filter(
-            or_(Course.code.ilike(f"%{q}%"), Course.title.ilike(f"%{q}%"))
-        ).limit(20).all()
+        # Build query
+        query = db.query(Course).options(joinedload(Course.preferences))
+        
+        # Apply filter only if q is not empty
+        if q and q.strip():
+            query = query.filter(
+                or_(Course.code.ilike(f"%{q}%"), Course.title.ilike(f"%{q}%"))
+            )
+        
+        courses = query.all()  # Removed .limit(100) - get all courses
         
         for course in courses:
+            try:
+                app_count = len(course.preferences) if course.preferences else 0
+            except:
+                app_count = 0
+                
             results.append(SearchResult(
                 result_type="course",
                 id=course.id,
                 display_name=course.code,
                 secondary_info=course.title,
-                application_count=len(course.preferences)
+                application_count=app_count
             ))
     
     return results
