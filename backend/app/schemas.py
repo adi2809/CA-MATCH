@@ -11,6 +11,7 @@ from .models import AssignmentStatus, StudyLevel, Track, UserRole
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: Optional[UserRole] = None
 
 
 class TokenData(BaseModel):
