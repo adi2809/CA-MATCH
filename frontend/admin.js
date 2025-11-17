@@ -467,12 +467,14 @@ document.getElementById("cancel-add-course")?.addEventListener("click", () => {
 document.getElementById("course-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const trackValue = document.getElementById("course-track").value;
+    
     const courseData = {
-        code: document.getElementById("course-code").value,
-        title: document.getElementById("course-title").value,
-        instructor: document.getElementById("course-instructor").value,
-        instructor_email: document.getElementById("course-email").value,
-        track: document.getElementById("course-track").value || null,
+        code: document.getElementById("course-code").value.trim(),
+        title: document.getElementById("course-title").value.trim(),
+        instructor: document.getElementById("course-instructor").value.trim() || null,
+        instructor_email: document.getElementById("course-email").value.trim() || null,
+        track: (trackValue && trackValue !== "") ? trackValue : null,  // FIXED LINE
         vacancies: parseInt(document.getElementById("course-vacancies").value),
     };
 
@@ -481,15 +483,16 @@ document.getElementById("course-form")?.addEventListener("submit", async (e) => 
             method: "POST",
             body: JSON.stringify(courseData),
         });
-
-        showToast("Course created!", "success");
+        showToast("Course created successfully!", "success");
         document.getElementById("add-course-form").style.display = "none";
         document.getElementById("course-form").reset();
         loadCoursesList();
     } catch (error) {
-        showToast("Failed to create course", "error");
+        showToast("Failed to create course: " + error.message, "error");
+        console.error("Course creation error:", error);
     }
 });
+
 
 document.getElementById("csv-upload")?.addEventListener("change", async (e) => {
     const file = e.target.files[0];
