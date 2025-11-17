@@ -71,15 +71,16 @@ def set_preferences(
         course = db.query(Course).filter(Course.id == pref_in.course_id).first()
         if not course:
             raise HTTPException(status_code=404, detail=f"Course {pref_in.course_id} not found")
-        if pref_in.track and course.track and pref_in.track != course.track:
-            raise HTTPException(status_code=400, detail="Track mismatch for course")
+        # if pref_in.track and course.track and pref_in.track != course.track:
+        #     raise HTTPException(status_code=400, detail="Track mismatch for course")
 
         preference = StudentCoursePreference(
-            student_id=profile.id,
-            course_id=course.id,
-            rank=pref_in.rank,
-            track=pref_in.track or course.track,
-        )
+        student_id=profile.id,
+        course_id=course.id,
+        rank=pref_in.rank,
+        # track=course.track,  # Just use the course's track
+    )
+
         db.add(preference)
         saved.append(preference)
 

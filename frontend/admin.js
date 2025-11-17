@@ -1,6 +1,14 @@
 // API Configuration
 const API_BASE = "http://localhost:8000/api";
 
+const token = localStorage.getItem("ca-token");
+const role = localStorage.getItem("ca-role");
+
+if (!token || role !== "admin") {
+    window.location.href = "index.html";
+}
+
+
 // State Management
 const state = {
     token: localStorage.getItem("ca-token"),
@@ -11,15 +19,11 @@ const state = {
 
 // DOM Elements
 const elements = {
-    authSection: document.getElementById("auth-section"),
-    loginCard: document.getElementById("login-card"),
-    registerCard: document.getElementById("register-card"),
-    studentDashboard: document.getElementById("student-dashboard"),
-    adminDashboard: document.getElementById("admin-dashboard"),
     toast: document.getElementById("toast"),
     detailPanel: document.getElementById("detail-panel"),
     conflictModal: document.getElementById("conflict-modal"),
 };
+
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -55,17 +59,11 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-function showSection(sectionId) {
-    document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+function showContentSection(sectionId) {
+    document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
     document.getElementById(sectionId).classList.add("active");
 }
 
-function showContentSection(containerId, sectionId) {
-    const container = document.getElementById(containerId);
-    container.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
-    container.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    document.getElementById(sectionId).classList.add("active");
-}
 
 function setActiveNav(buttonId) {
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -75,278 +73,15 @@ function setActiveNav(buttonId) {
 // =============================================================================
 // AUTHENTICATION
 // =============================================================================
-
-document.getElementById("login-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const uni = document.getElementById("login-uni").value;
-    const password = document.getElementById("login-password").value;
-
-    const formData = new URLSearchParams();
-    formData.append("username", uni);
-    formData.append("password", password);
-
-    try {
-        const response = await fetch(`${API_BASE}/auth/token`, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: formData,
-        });
-
-        if (!response.ok) throw new Error("Invalid credentials");
-
-        const data = await response.json();
-        state.token = data.access_token;
-        state.role = data.role || "student";
-
-        localStorage.setItem("ca-token", state.token);
-        localStorage.setItem("ca-role", state.role);
-
-        showToast("Login successful! Redirecting...", "success");
-        
-        // Redirect to separate dashboard pages
-        setTimeout(() => {
-            if (state.role === "admin") {
-                window.location.href = "admin-dashboard.html";
-            } else {
-                window.location.href = "student-dashboard.html";
-            }
-        }, 500);
-    } catch (error) {
-        showToast(error.message, "error");
-    }
-});
-
-document.getElementById("register-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("register-email").value;
-    const uni = document.getElementById("register-uni").value;
-    const password = document.getElementById("register-password").value;
-    const role = document.getElementById("register-role").value;
-
-    try {
-        await apiRequest("/auth/register", {
-            method: "POST",
-            body: JSON.stringify({ email, uni, password, role }),
-        });
-
-        showToast("Registration successful! Please login.", "success");
-        document.getElementById("nav-login").click();
-    } catch (error) {
-        showToast(error.message, "error");
-    }
-});
-
-document.getElementById("nav-register").addEventListener("click", (e) => {
-    e.preventDefault();
-    elements.loginCard.style.display = "none";
-    elements.registerCard.style.display = "block";
-});
-
-document.getElementById("nav-login").addEventListener("click", (e) => {
-    e.preventDefault();
-    elements.registerCard.style.display = "none";
-    elements.loginCard.style.display = "block";
-});
-
-document.getElementById("nav-logout")?.addEventListener("click", logout);
-document.getElementById("nav-logout-admin")?.addEventListener("click", logout);
-
-function logout() {
+document.getElementById("nav-logout").addEventListener("click", () => {
     localStorage.removeItem("ca-token");
     localStorage.removeItem("ca-role");
-    state.token = null;
-    state.role = null;
-    showSection("auth-section");
-    showToast("Logged out successfully", "info");
-}
+    window.location.href = "index.html";  // ✅ Redirect to login page
+});
 
 // =============================================================================
 // INITIALIZATION
 // =============================================================================
-
-function initDashboard() {
-    if (state.role === "admin") {
-        showSection("admin-dashboard");
-        loadAdminDashboard();
-    } else {
-        showSection("student-dashboard");
-        loadStudentCourses();
-    }
-}
-
-// Check if already logged in
-if (state.token) {
-    initDashboard();
-}
-
-// =============================================================================
-// STUDENT DASHBOARD
-// =============================================================================
-
-document.getElementById("student-nav-courses")?.addEventListener("click", () => {
-    setActiveNav("student-nav-courses");
-    showContentSection("student-dashboard", "student-courses-view");
-    loadStudentCourses();
-});
-
-document.getElementById("student-nav-applications")?.addEventListener("click", () => {
-    setActiveNav("student-nav-applications");
-    showContentSection("student-dashboard", "student-applications-view");
-    loadStudentApplications();
-});
-
-async function loadStudentCourses() {
-    try {
-        const courses = await apiRequest("/students/courses");
-        const grid = document.getElementById("student-courses-grid");
-        const filter = document.getElementById("student-track-filter").value;
-
-        const filtered = filter ? courses.filter(c => c.track === filter) : courses;
-
-        grid.innerHTML = filtered.map(course => `
-            <div class="course-card">
-                <div class="course-header">
-                    <h3>${course.code}</h3>
-                    <span class="badge badge-${course.vacancies > 0 ? 'success' : 'danger'}">
-                        ${course.vacancies} spots
-                    </span>
-                </div>
-                <h4>${course.title}</h4>
-                <p><strong>Instructor:</strong> ${course.instructor || 'TBA'}</p>
-                <p><strong>Track:</strong> ${course.track || 'N/A'}</p>
-                <button class="btn btn-primary" onclick="applyToCourse(${course.id})">
-                    Apply
-                </button>
-            </div>
-        `).join('');
-    } catch (error) {
-        showToast("Failed to load courses", "error");
-    }
-}
-
-document.getElementById("student-track-filter")?.addEventListener("change", loadStudentCourses);
-
-window.applyToCourse = async function(courseId) {
-    const rank = prompt("Enter your preference rank (1 = highest priority):");
-    if (!rank || isNaN(rank)) return;
-
-    try {
-        await apiRequest("/students/preferences", {
-            method: "POST",
-            body: JSON.stringify({ course_id: courseId, rank: parseInt(rank) }),
-        });
-        showToast("Application submitted!", "success");
-    } catch (error) {
-        showToast("Failed to apply", "error");
-    }
-};
-
-async function loadStudentApplications() {
-    try {
-        const applications = await apiRequest("/students/preferences");
-        const list = document.getElementById("student-applications-list");
-
-        if (applications.length === 0) {
-            list.innerHTML = '<p class="empty-state">No applications yet. Apply to courses to get started!</p>';
-            return;
-        }
-
-        // Sort by rank
-        applications.sort((a, b) => a.rank - b.rank);
-
-        list.innerHTML = applications.map(app => `
-            <div class="application-item" draggable="true" data-id="${app.id}">
-                <div class="drag-handle">☰</div>
-                <div class="application-info">
-                    <span class="rank-badge">#${app.rank}</span>
-                    <div>
-                        <strong>${app.course_code}</strong> - ${app.course_title || 'Course'}
-                    </div>
-                </div>
-                <button class="btn btn-danger btn-sm" onclick="deleteApplication(${app.id})">
-                    Remove
-                </button>
-            </div>
-        `).join('');
-
-        // Add drag and drop
-        initDragAndDrop();
-    } catch (error) {
-        showToast("Failed to load applications", "error");
-    }
-}
-
-function initDragAndDrop() {
-    const items = document.querySelectorAll(".application-item");
-    let draggedItem = null;
-
-    items.forEach(item => {
-        item.addEventListener("dragstart", function() {
-            draggedItem = this;
-            this.style.opacity = "0.5";
-        });
-
-        item.addEventListener("dragend", function() {
-            this.style.opacity = "1";
-        });
-
-        item.addEventListener("dragover", function(e) {
-            e.preventDefault();
-        });
-
-        item.addEventListener("drop", function(e) {
-            e.preventDefault();
-            if (draggedItem !== this) {
-                const allItems = [...document.querySelectorAll(".application-item")];
-                const draggedIndex = allItems.indexOf(draggedItem);
-                const droppedIndex = allItems.indexOf(this);
-
-                if (draggedIndex < droppedIndex) {
-                    this.parentNode.insertBefore(draggedItem, this.nextSibling);
-                } else {
-                    this.parentNode.insertBefore(draggedItem, this);
-                }
-
-                updateApplicationRanks();
-            }
-        });
-    });
-}
-
-async function updateApplicationRanks() {
-    const items = document.querySelectorAll(".application-item");
-    const updates = [];
-
-    items.forEach((item, index) => {
-        const id = item.dataset.id;
-        const rank = index + 1;
-        item.querySelector(".rank-badge").textContent = `#${rank}`;
-        updates.push({ id: parseInt(id), rank });
-    });
-
-    // Update ranks on backend
-    try {
-        for (const update of updates) {
-            // Note: You may need to add an endpoint to update individual preference ranks
-            // For now, we'll just update the UI
-        }
-        showToast("Rankings updated!", "success");
-    } catch (error) {
-        showToast("Failed to update rankings", "error");
-    }
-}
-
-window.deleteApplication = async function(id) {
-    if (!confirm("Remove this application?")) return;
-
-    try {
-        await apiRequest(`/students/preferences/${id}`, { method: "DELETE" });
-        showToast("Application removed", "success");
-        loadStudentApplications();
-    } catch (error) {
-        showToast("Failed to remove application", "error");
-    }
-};
 
 // =============================================================================
 // ADMIN DASHBOARD
@@ -355,31 +90,31 @@ window.deleteApplication = async function(id) {
 // Navigation
 document.getElementById("admin-nav-dashboard")?.addEventListener("click", () => {
     setActiveNav("admin-nav-dashboard");
-    showContentSection("admin-dashboard", "admin-dashboard-view");
+    showContentSection("admin-dashboard-view");
     loadAdminDashboard();
 });
 
 document.getElementById("admin-nav-applications")?.addEventListener("click", () => {
     setActiveNav("admin-nav-applications");
-    showContentSection("admin-dashboard", "admin-applications-view");
+    showContentSection("admin-applications-view");
     loadAllApplications();
 });
 
 document.getElementById("admin-nav-students")?.addEventListener("click", () => {
     setActiveNav("admin-nav-students");
-    showContentSection("admin-dashboard", "admin-students-view");
+    showContentSection("admin-students-view");
     loadStudentsList();
 });
 
 document.getElementById("admin-nav-courses")?.addEventListener("click", () => {
     setActiveNav("admin-nav-courses");
-    showContentSection("admin-dashboard", "admin-courses-view");
+    showContentSection("admin-courses-view");
     loadCoursesList();
 });
 
 document.getElementById("admin-nav-assignments")?.addEventListener("click", () => {
     setActiveNav("admin-nav-assignments");
-    showContentSection("admin-dashboard", "admin-assignments-view");
+    showContentSection("admin-assignments-view");
     loadAssignments();
 });
 
@@ -732,29 +467,36 @@ document.getElementById("cancel-add-course")?.addEventListener("click", () => {
 document.getElementById("course-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const trackValue = document.getElementById("course-track").value;
+    
     const courseData = {
-        code: document.getElementById("course-code").value,
-        title: document.getElementById("course-title").value,
-        instructor: document.getElementById("course-instructor").value,
-        instructor_email: document.getElementById("course-email").value,
-        track: document.getElementById("course-track").value || null,
-        vacancies: parseInt(document.getElementById("course-vacancies").value),
-    };
+    code: document.getElementById("course-code").value.trim(),
+    title: document.getElementById("course-title").value.trim(),
+    instructor: document.getElementById("course-instructor").value.trim() || null,
+    instructor_email: document.getElementById("course-email").value.trim() || null,
+    track: (trackValue && trackValue !== "") ? trackValue : null,
+    vacancies: parseInt(document.getElementById("course-vacancies").value),
+    grade_threshold: document.getElementById("course-grade-threshold").value.trim() || null,
+    similar_courses: document.getElementById("course-similar-courses").value.trim() || null,
+};
+
+
 
     try {
         await apiRequest("/admin/courses", {
             method: "POST",
             body: JSON.stringify(courseData),
         });
-
-        showToast("Course created!", "success");
+        showToast("Course created successfully!", "success");
         document.getElementById("add-course-form").style.display = "none";
         document.getElementById("course-form").reset();
         loadCoursesList();
     } catch (error) {
-        showToast("Failed to create course", "error");
+        showToast("Failed to create course: " + error.message, "error");
+        console.error("Course creation error:", error);
     }
 });
+
 
 document.getElementById("csv-upload")?.addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -855,3 +597,5 @@ window.deleteAssignment = async function(id) {
         showToast("Failed to remove assignment", "error");
     }
 };
+
+loadAdminDashboard();

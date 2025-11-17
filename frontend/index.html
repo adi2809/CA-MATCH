@@ -1,281 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CA Match Platform</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <header class="app-header">
-      <div class="branding">
-        <span class="logo">🎓</span>
-        <h1>Course Assistant Matching</h1>
-      </div>
-      <nav class="nav-actions">
-        <button id="nav-login" class="ghost-button">Login</button>
-        <button id="nav-register" class="primary-button">Register</button>
-        <button id="nav-logout" class="ghost-button hidden">Logout</button>
-      </nav>
-    </header>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Match Platform - Columbia IEOR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
 
-    <main class="content">
-      <section id="auth-section" class="card-grid">
-        <article class="card" id="login-card">
-          <h2>Welcome Back</h2>
-          <p class="card-subtitle">Log in with your Columbia UNI credentials</p>
-          <form id="login-form" class="stack">
-            <label>
-              <span>UNI</span>
-              <input type="text" id="login-uni" required minlength="6" maxlength="7" />
-            </label>
-            <label>
-              <span>Password</span>
-              <input type="password" id="login-password" required minlength="8" />
-            </label>
-            <button type="submit" class="primary-button">Sign in</button>
-          </form>
-        </article>
+    <!-- ========================================================================
+         AUTHENTICATION SECTION
+         ======================================================================== -->
+    <section id="auth-section" class="active">
+        <div class="auth-container">
+            <h1 class="app-title">CA Match Platform</h1>
+            <p class="subtitle">Columbia IEOR Course Assistant Matching</p>
 
-        <article class="card" id="register-card">
-          <h2>Create an account</h2>
-          <p class="card-subtitle">New applicants and administrators can sign up</p>
-          <form id="register-form" class="stack">
-            <label>
-              <span>Email</span>
-              <input type="email" id="register-email" required />
-            </label>
-            <label>
-              <span>UNI</span>
-              <input type="text" id="register-uni" required minlength="6" maxlength="7" />
-            </label>
-            <label>
-              <span>Password</span>
-              <input type="password" id="register-password" required minlength="8" />
-            </label>
-            <label>
-              <span>Account type</span>
-              <select id="register-role">
-                <option value="student">Student</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </label>
-            <button type="submit" class="primary-button">Register</button>
-          </form>
-        </article>
-      </section>
-
-      <section id="student-dashboard" class="hidden">
-        <div class="dashboard-grid">
-          <article class="card wide">
-            <div class="card-header">
-              <h2>My Profile</h2>
-              <button id="refresh-profile" class="ghost-button">Refresh</button>
+            <!-- Login Card -->
+            <div id="login-card" class="card">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-uni">UNI</label>
+                        <input type="text" id="login-uni" required maxlength="7" 
+                               placeholder="e.g., ab1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="toggle-auth">
+                    Don't have an account? 
+                    <a href="#" id="nav-register">Register</a>
+                </p>
             </div>
-            <form id="profile-form" class="grid-two">
-              <label>
-                <span>Full name</span>
-                <input type="text" id="profile-full-name" placeholder="Jane Doe" />
-              </label>
-              <label>
-                <span>Degree program</span>
-                <input type="text" id="profile-degree" placeholder="MS Operations Research" />
-              </label>
-              <label>
-                <span>Level of study</span>
-                <select id="profile-level">
-                  <option value="">Select level</option>
-                  <option value="undergraduate">Undergraduate</option>
-                  <option value="masters">Masters</option>
-                </select>
-              </label>
-              <label>
-                <span>Areas of interest</span>
-                <select id="profile-interests" multiple size="5">
-                  <option value="Financial Engineering & Risk Management">Financial Engineering & Risk Management</option>
-                  <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
-                  <option value="Optimization">Optimization</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stochastic Modeling and Simulation">Stochastic Modeling and Simulation</option>
-                </select>
-              </label>
-              <label>
-                <span>Resume link</span>
-                <input type="url" id="profile-resume" placeholder="https://..." />
-              </label>
-              <label>
-                <span>Transcript link</span>
-                <input type="url" id="profile-transcript" placeholder="https://..." />
-              </label>
-              <label>
-                <span>Profile photo URL</span>
-                <input type="url" id="profile-photo" placeholder="https://..." />
-              </label>
-              <div class="profile-actions">
-                <button type="submit" class="primary-button">Save profile</button>
-              </div>
-            </form>
-          </article>
 
-          <article class="card wide">
-            <div class="card-header">
-              <h2>Course preferences</h2>
-              <button id="add-preference" class="ghost-button">Add preference</button>
+            <!-- Register Card -->
+            <div id="register-card" class="card" style="display: none;">
+                <h2>Register</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required 
+                               placeholder="your.email@columbia.edu">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-uni">UNI</label>
+                        <input type="text" id="register-uni" required maxlength="7" 
+                               placeholder="e.g., ab1234">
+                        <small>Format: 2 letters + 4 digits (e.g., ab1234)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="8"
+                               placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-role">Role</label>
+                        <select id="register-role" required>
+                            <option value="">Select role...</option>
+                            <option value="student">Student</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p class="toggle-auth">
+                    Already have an account? 
+                    <a href="#" id="nav-login">Login</a>
+                </p>
             </div>
-            <form id="preferences-form" class="stack"></form>
-            <button id="save-preferences" class="primary-button">Save preferences</button>
-          </article>
-
-          <article class="card wide">
-            <h2>Available courses</h2>
-            <table class="data-table" id="courses-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Track</th>
-                  <th>Vacancies</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
         </div>
-      </section>
+    </section>
 
-      <section id="admin-dashboard" class="hidden">
-        <div class="dashboard-grid">
-          <article class="card wide">
-            <div class="card-header">
-              <h2>Course management</h2>
-              <div class="actions">
-                <label class="file-upload">
-                  <input type="file" id="import-courses" accept=".csv" />
-                  <span>Bulk import CSV</span>
-                </label>
-              </div>
-            </div>
-            <form id="course-form" class="grid-two">
-              <label>
-                <span>Course code</span>
-                <input type="text" id="course-code" required />
-              </label>
-              <label>
-                <span>Title</span>
-                <input type="text" id="course-title" required />
-              </label>
-              <label>
-                <span>Instructor</span>
-                <input type="text" id="course-instructor" />
-              </label>
-              <label>
-                <span>Instructor email</span>
-                <input type="email" id="course-instructor-email" />
-              </label>
-              <label>
-                <span>Track</span>
-                <select id="course-track">
-                  <option value="">Select track</option>
-                  <option value="Financial Engineering & Risk Management">Financial Engineering & Risk Management</option>
-                  <option value="Machine Learning & Analytics">Machine Learning & Analytics</option>
-                  <option value="Optimization">Optimization</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Stochastic Modeling and Simulation">Stochastic Modeling and Simulation</option>
-                </select>
-              </label>
-              <label>
-                <span>Vacancies</span>
-                <input type="number" id="course-vacancies" min="0" value="0" />
-              </label>
-              <label>
-                <span>Grade threshold</span>
-                <input type="text" id="course-grade" />
-              </label>
-              <label>
-                <span>Similar courses</span>
-                <input type="text" id="course-similar" />
-              </label>
-              <div class="profile-actions">
-                <button type="submit" class="primary-button">Save course</button>
-              </div>
-            </form>
-            <table class="data-table" id="admin-courses-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Track</th>
-                  <th>Vacancies</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
-
-          <article class="card">
-            <h2>Matching engine</h2>
-            <p>Kick off a fresh assignment run respecting vacancies and student preferences.</p>
-            <button id="run-match" class="primary-button">Run matching</button>
-            <div id="match-status" class="status"></div>
-          </article>
-
-          <article class="card wide">
-            <h2>Assignments</h2>
-            <table class="data-table" id="assignments-table">
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>UNI</th>
-                  <th>Course</th>
-                  <th>Instructor</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </article>
-
-          <article class="card wide">
-            <h2>Communication</h2>
-            <form id="email-form" class="stack">
-              <label>
-                <span>Email subject</span>
-                <input type="text" id="email-subject" required />
-              </label>
-              <label>
-                <span>Message</span>
-                <textarea id="email-message" rows="5" required></textarea>
-              </label>
-              <label class="checkbox">
-                <input type="checkbox" id="email-cc" checked />
-                <span>CC instructors on emails</span>
-              </label>
-              <button type="submit" class="primary-button">Compose email summary</button>
-            </form>
-            <pre id="email-preview" class="code-block"></pre>
-          </article>
-        </div>
-      </section>
-    </main>
-
-    <footer class="app-footer">
-      <p>Built for Columbia IEOR – streamline your CA matching workflow.</p>
-    </footer>
-
-    <div id="toast" class="toast hidden"></div>
-
-    <script src="app.js" type="module"></script>
-  </body>
+    <!-- Load authentication script -->
+    <script src="auth.js"></script>
+</body>
 </html>

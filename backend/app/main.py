@@ -12,6 +12,11 @@ origins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "*",
 ]
 
 app.add_middleware(
@@ -26,8 +31,6 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(students.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
-
 @app.get("/api/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
-

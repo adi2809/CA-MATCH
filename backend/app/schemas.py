@@ -11,6 +11,7 @@ from .models import AssignmentStatus, StudyLevel, Track, UserRole
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: Optional[UserRole] = None
 
 
 class TokenData(BaseModel):
@@ -62,12 +63,12 @@ class StudentProfileRead(StudentProfileBase):
 class CourseBase(BaseModel):
     code: str
     title: str
-    instructor: Optional[str]
-    instructor_email: Optional[EmailStr]
-    track: Optional[Track]
+    instructor: Optional[str] = None
+    instructor_email: Optional[EmailStr] = None
+    track: Optional[Track] = None
     vacancies: int = 0
-    grade_threshold: Optional[str]
-    similar_courses: Optional[str]
+    grade_threshold: Optional[str] = None  # ADD = None
+    similar_courses: Optional[str] = None  # ADD = None
 
 
 class CourseCreate(CourseBase):
@@ -84,7 +85,6 @@ class CourseRead(CourseBase):
 class StudentCoursePreferenceBase(BaseModel):
     course_id: int
     rank: int
-    track: Optional[Track]
 
 
 class StudentCoursePreferenceCreate(StudentCoursePreferenceBase):
@@ -94,9 +94,94 @@ class StudentCoursePreferenceCreate(StudentCoursePreferenceBase):
 class StudentCoursePreferenceRead(StudentCoursePreferenceBase):
     id: int
     student_id: int
+    highlighted: bool = False
+    notes: Optional[str] = None
 
     class Config:
         orm_mode = True
+
+
+# NEW SCHEMAS FOR ENHANCED FEATURES
+
+class ApplicationDetail(BaseModel):
+    """Detailed view of an application with student and course info"""
+    preference_id: int
+    student_id: int
+    student_name: Optional[str]
+    student_uni: str
+    student_email: Optional[str]
+    course_id: int
+    course_code: str
+    course_title: str
+    instructor: Optional[str]
+    track: Optional[Track]
+    rank: int
+    highlighted: bool
+    notes: Optional[str]
+    is_assigned: bool = False
+
+    class Config:
+        orm_mode = True
+
+
+class StudentApplications(BaseModel):
+    """All applications for a specific student"""
+    student_id: int
+    student_name: Optional[str]
+    student_uni: str
+    student_email: Optional[str]
+    degree_program: Optional[str]
+    level_of_study: Optional[StudyLevel]
+    total_applications: int
+    highlighted_count: int
+    applications: List[ApplicationDetail]
+
+
+class CourseApplications(BaseModel):
+    """All applications for a specific course"""
+    course_id: int
+    course_code: str
+    course_title: str
+    instructor: Optional[str]
+    track: Optional[Track]
+    vacancies: int
+    total_applications: int
+    highlighted_count: int
+    applications: List[ApplicationDetail]
+
+
+class HighlightToggle(BaseModel):
+    """Request to toggle highlight status"""
+    highlighted: bool
+    notes: Optional[str] = None
+
+
+class HighlightConflict(BaseModel):
+    """Information about highlight conflicts"""
+    student_id: int
+    student_name: Optional[str]
+    student_uni: str
+    highlighted_courses: List[dict]  # List of {course_code, course_title, rank}
+    total_highlights: int
+
+
+class SearchResult(BaseModel):
+    """Generic search result"""
+    result_type: str  # "student" or "course"
+    id: int
+    display_name: str  # Student name or course code
+    secondary_info: str  # UNI or course title
+    application_count: int
+
+
+class DashboardStats(BaseModel):
+    """Admin dashboard statistics"""
+    total_students: int
+    total_courses: int
+    total_applications: int
+    total_assignments: int
+    highlighted_applications: int
+    courses_with_no_applications: List[dict]
 
 
 class AssignmentBase(BaseModel):
@@ -124,6 +209,7 @@ class AssignmentDetails(AssignmentRead):
     course_title: Optional[str]
     instructor: Optional[str]
     instructor_email: Optional[EmailStr]
+    highlight_conflicts: int = 0  # Number of other courses where student is highlighted
 
 
 class MatchRequest(BaseModel):
@@ -140,4 +226,3 @@ class EmailPayload(BaseModel):
     subject: str
     message: str
     cc_instructors: bool = True
-
