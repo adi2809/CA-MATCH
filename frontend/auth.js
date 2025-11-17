@@ -29,18 +29,24 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
         if (!response.ok) throw new Error("Invalid credentials");
 
         const data = await response.json();
+        
+        console.log("Login response data:", data);
 
         // Store token and role in localStorage
         localStorage.setItem("ca-token", data.access_token);
         localStorage.setItem("ca-role", data.role || "student");
 
+        console.log("Stored role:", localStorage.getItem("ca-role"));
         showToast("Login successful! Redirecting...", "success");
 
         // Redirect to appropriate dashboard
+        console.log("About to redirect, role is:", data.role);
         setTimeout(() => {
             if (data.role === "admin") {
+                console.log("Redirecting to admin dashboard");
                 window.location.href = "admin-dashboard.html";
             } else {
+                console.log("Redirecting to student dashboard");
                 window.location.href = "student-dashboard.html";
             }
         }, 500);

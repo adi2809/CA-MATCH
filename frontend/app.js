@@ -101,8 +101,16 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
         localStorage.setItem("ca-token", state.token);
         localStorage.setItem("ca-role", state.role);
 
-        showToast("Login successful!", "success");
-        initDashboard();
+        showToast("Login successful! Redirecting...", "success");
+        
+        // Redirect to separate dashboard pages
+        setTimeout(() => {
+            if (state.role === "admin") {
+                window.location.href = "admin-dashboard.html";
+            } else {
+                window.location.href = "student-dashboard.html";
+            }
+        }, 500);
     } catch (error) {
         showToast(error.message, "error");
     }
