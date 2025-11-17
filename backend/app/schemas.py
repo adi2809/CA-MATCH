@@ -63,12 +63,12 @@ class StudentProfileRead(StudentProfileBase):
 class CourseBase(BaseModel):
     code: str
     title: str
-    instructor: Optional[str]
-    instructor_email: Optional[EmailStr]
-    track: Optional[Track]
+    instructor: Optional[str] = None
+    instructor_email: Optional[EmailStr] = None
+    track: Optional[Track] = None
     vacancies: int = 0
-    grade_threshold: Optional[str]
-    similar_courses: Optional[str]
+    grade_threshold: Optional[str] = None  # ADD = None
+    similar_courses: Optional[str] = None  # ADD = None
 
 
 class CourseCreate(CourseBase):

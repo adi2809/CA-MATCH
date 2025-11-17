@@ -104,19 +104,41 @@ document.getElementById("student-track-filter").addEventListener("change", loadS
 
 // Apply to Course
 window.applyToCourse = async function(courseId) {
-    const rank = prompt("Enter your preference rank (1 = highest priority):");
-    if (!rank || isNaN(rank)) return;
+    const rankInput = prompt("Enter your preference rank (1 = highest priority):");
+    
+    if (!rankInput) return; // User cancelled
+    
+    const rank = parseInt(rankInput);
+    if (isNaN(rank) || rank < 1) {
+        showToast("Please enter a valid rank number (1 or higher)", "error");
+        return;
+    }
 
     try {
+        // Simple single preference submission
         await apiRequest("/students/preferences", {
             method: "POST",
-            body: JSON.stringify({ course_id: courseId, rank: parseInt(rank) }),
+            body: JSON.stringify([{
+                course_id: courseId,
+                rank: rank
+            }]),
         });
-        showToast("Application submitted!", "success");
+        
+        showToast("Application submitted successfully!", "success");
+        
+        // Refresh the applications view
+        setTimeout(() => {
+            showContentSection("student-applications-view");
+            setActiveNav("student-nav-applications");
+            loadStudentApplications();
+        }, 500);
+        
     } catch (error) {
-        showToast("Failed to apply", "error");
+        console.error("Application error:", error);
+        showToast("Failed to apply. Please try again.", "error");
     }
 };
+
 
 // Load Applications
 async function loadStudentApplications() {

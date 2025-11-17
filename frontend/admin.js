@@ -470,13 +470,17 @@ document.getElementById("course-form")?.addEventListener("submit", async (e) => 
     const trackValue = document.getElementById("course-track").value;
     
     const courseData = {
-        code: document.getElementById("course-code").value.trim(),
-        title: document.getElementById("course-title").value.trim(),
-        instructor: document.getElementById("course-instructor").value.trim() || null,
-        instructor_email: document.getElementById("course-email").value.trim() || null,
-        track: (trackValue && trackValue !== "") ? trackValue : null,  // FIXED LINE
-        vacancies: parseInt(document.getElementById("course-vacancies").value),
-    };
+    code: document.getElementById("course-code").value.trim(),
+    title: document.getElementById("course-title").value.trim(),
+    instructor: document.getElementById("course-instructor").value.trim() || null,
+    instructor_email: document.getElementById("course-email").value.trim() || null,
+    track: (trackValue && trackValue !== "") ? trackValue : null,
+    vacancies: parseInt(document.getElementById("course-vacancies").value),
+    grade_threshold: document.getElementById("course-grade-threshold").value.trim() || null,
+    similar_courses: document.getElementById("course-similar-courses").value.trim() || null,
+};
+
+
 
     try {
         await apiRequest("/admin/courses", {
