@@ -22,6 +22,7 @@ from .database import Base
 class UserRole(str, Enum):
     STUDENT = "student"
     ADMIN = "admin"
+    PROFESSOR = "professor"
 
 
 class StudyLevel(str, Enum):
@@ -92,11 +93,13 @@ class Course(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     instructor: Mapped[Optional[str]] = mapped_column(String(255))
     instructor_email: Mapped[Optional[str]] = mapped_column(String(255))
+    professor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     track: Mapped[Optional[Track]] = mapped_column(SQLEnum(Track), nullable=True)
     vacancies: Mapped[int] = mapped_column(Integer, default=0)
     grade_threshold: Mapped[Optional[str]] = mapped_column(String(32))
     similar_courses: Mapped[Optional[str]] = mapped_column(Text)
 
+    professor: Mapped[Optional["User"]] = relationship(foreign_keys=[professor_id])
     preferences: Mapped[List["StudentCoursePreference"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
     )

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
 from ..dependencies import get_current_admin
-from ..models import Assignment, Course, StudentCoursePreference, StudentProfile, Track, User
+from ..models import Assignment, Course, StudentCoursePreference, StudentProfile, Track, User, UserRole
 from ..schemas import (
     ApplicationDetail, AssignmentCreate, AssignmentDetails, CourseApplications,
     CourseCreate, CourseRead, DashboardStats, EmailPayload, HighlightConflict,
@@ -461,3 +461,118 @@ def _to_assignment_details(assignment: Assignment, db: Session) -> AssignmentDet
         instructor_email=course.instructor_email if course else None,
         highlight_conflicts=conflicts
     )
+
+
+# PROFESSOR MANAGEMENT
+
+@router.get("/professors")
+def list_professors(db: Session = Depends(get_db), _: None = Depends(get_current_admin)):
+    """Get all professors"""
+    professors = db.query(User).filter(User.role == UserRole.PROFESSOR).all()
+    
+    result = []
+    for prof in professors:
+        # Count courses assigned to this professor
+        course_count = db.query(Course).filter(Course.professor_id == prof.id).count()
+        
+        result.append({
+            "id": prof.id,
+            "uni": prof.uni,
+            "email": prof.email,
+            "course_count": course_count,
+        })
+    
+    return result
+
+
+@router.post("/professors/{user_id}/assign-course/{course_id}")
+def assign_professor_to_course(
+    user_id: int,
+    course_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(get_current_admin),
+):
+    """Assign a professor to a course"""
+    # Verify professor exists and is a professor
+    professor = db.query(User).filter(
+        User.id == user_id,
+        User.role == UserRole.PROFESSOR
+    ).first()
+    
+    if not professor:
+        raise HTTPException(status_code=404, detail="Professor not found")
+    
+    # Verify course exists
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Assign professor
+    course.professor_id = professor.id
+    course.instructor = professor.uni  # Update instructor field
+    course.instructor_email = professor.email
+    db.commit()
+    
+    return {
+        "message": f"Professor {professor.uni} assigned to {course.code}",
+        "course_id": course.id,
+        "professor_id": professor.id,
+    }
+
+
+@router.delete("/professors/{user_id}/unassign-course/{course_id}")
+def unassign_professor_from_course(
+    user_id: int,
+    course_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(get_current_admin),
+):
+    """Remove a professor from a course"""
+    course = db.query(Course).filter(
+        Course.id == course_id,
+        Course.professor_id == user_id
+    ).first()
+    
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found or professor not assigned")
+    
+    course.professor_id = None
+    db.commit()
+    
+    return {"message": f"Professor unassigned from {course.code}"}
+
+
+@router.get("/professors/{user_id}/courses")
+def get_professor_courses(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(get_current_admin),
+):
+    """Get all courses assigned to a specific professor"""
+    professor = db.query(User).filter(
+        User.id == user_id,
+        User.role == UserRole.PROFESSOR
+    ).first()
+    
+    if not professor:
+        raise HTTPException(status_code=404, detail="Professor not found")
+    
+    courses = db.query(Course).filter(Course.professor_id == user_id).all()
+    
+    return {
+        "professor": {
+            "id": professor.id,
+            "uni": professor.uni,
+            "email": professor.email,
+        },
+        "courses": [
+            {
+                "id": c.id,
+                "code": c.code,
+                "title": c.title,
+                "vacancies": c.vacancies,
+            }
+            for c in courses
+        ],
+    }
+

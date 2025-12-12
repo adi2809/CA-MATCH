@@ -41,8 +41,8 @@ def login(
     user = db.query(User).filter(User.uni == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect UNI or password")
-    access_token = create_access_token(data={"sub": user.uni, "role": user.role})
-    return Token(access_token=access_token, role=user.role)
+    access_token = create_access_token(data={"sub": user.uni, "role": user.role.value})
+    return Token(access_token=access_token, role=user.role.value)
 
 
 

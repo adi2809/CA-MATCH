@@ -11,7 +11,7 @@ from .models import AssignmentStatus, StudyLevel, Track, UserRole
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    role: Optional[UserRole] = None
+    role: Optional[str] = None
 
 
 class TokenData(BaseModel):
@@ -96,6 +96,8 @@ class StudentCoursePreferenceRead(StudentCoursePreferenceBase):
     student_id: int
     highlighted: bool = False
     notes: Optional[str] = None
+    course_code: Optional[str] = None
+    course_title: Optional[str] = None
 
     class Config:
         orm_mode = True

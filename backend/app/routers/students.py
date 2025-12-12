@@ -89,11 +89,72 @@ def set_preferences(
     return saved
 
 
+@router.post("/preferences/add", response_model=StudentCoursePreferenceRead)
+def add_single_preference(
+    preference: StudentCoursePreferenceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add a single course preference without replacing existing ones"""
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found. Please complete your profile first.")
+
+    # Check if course exists
+    course = db.query(Course).filter(Course.id == preference.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail=f"Course not found")
+
+    # Check if already applied to this course
+    existing_course = db.query(StudentCoursePreference).filter(
+        StudentCoursePreference.student_id == profile.id,
+        StudentCoursePreference.course_id == preference.course_id
+    ).first()
+    
+    if existing_course:
+        raise HTTPException(status_code=400, detail="You have already applied to this course")
+
+    # Check if rank is already used by another application
+    existing_rank = db.query(StudentCoursePreference).filter(
+        StudentCoursePreference.student_id == profile.id,
+        StudentCoursePreference.rank == preference.rank
+    ).first()
+    
+    if existing_rank:
+        # Get the course code for the conflicting application
+        conflicting_course = db.query(Course).filter(Course.id == existing_rank.course_id).first()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Rank {preference.rank} is already used for {conflicting_course.code if conflicting_course else 'another course'}. Please choose a different rank."
+        )
+
+    # Create new preference
+    new_preference = StudentCoursePreference(
+        student_id=profile.id,
+        course_id=course.id,
+        rank=preference.rank,
+    )
+    db.add(new_preference)
+    db.commit()
+    db.refresh(new_preference)
+    
+    return {
+        "id": new_preference.id,
+        "course_id": new_preference.course_id,
+        "rank": new_preference.rank,
+        "student_id": new_preference.student_id,
+        "highlighted": new_preference.highlighted,
+        "notes": new_preference.notes,
+        "course_code": course.code,
+        "course_title": course.title,
+    }
+
+
 @router.get("/preferences", response_model=List[StudentCoursePreferenceRead])
 def get_preferences(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> List[StudentCoursePreference]:
+):
     profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -103,7 +164,48 @@ def get_preferences(
         .order_by(StudentCoursePreference.rank.asc())
         .all()
     )
-    return preferences
+    
+    # Build response with course info
+    result = []
+    for pref in preferences:
+        course = db.query(Course).filter(Course.id == pref.course_id).first()
+        result.append({
+            "id": pref.id,
+            "course_id": pref.course_id,
+            "rank": pref.rank,
+            "student_id": pref.student_id,
+            "highlighted": pref.highlighted,
+            "notes": pref.notes,
+            "course_code": course.code if course else "Unknown",
+            "course_title": course.title if course else "Unknown",
+        })
+    return result
+
+
+@router.delete("/preferences/{preference_id}")
+def delete_preference(
+    preference_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a single course preference"""
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    # Find the preference
+    preference = db.query(StudentCoursePreference).filter(
+        StudentCoursePreference.id == preference_id,
+        StudentCoursePreference.student_id == profile.id
+    ).first()
+    
+    if not preference:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    db.delete(preference)
+    db.commit()
+    
+    return {"message": "Application removed successfully"}
 
 
 @router.get("/courses", response_model=List[CourseRead])
