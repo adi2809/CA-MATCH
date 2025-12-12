@@ -55,6 +55,8 @@ class User(Base, TimestampMixin):
     uni: Mapped[str] = mapped_column(String(7), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.STUDENT)
+    first_name: Mapped[Optional[str]] = mapped_column(String(100))
+    last_name: Mapped[Optional[str]] = mapped_column(String(100))
 
     student_profile: Mapped["StudentProfile"] = relationship(
         back_populates="user", uselist=False

@@ -80,11 +80,21 @@ def search(
                 app_count = len(student.preferences) if student.preferences else 0
             except:
                 app_count = 0
+            
+            # Use full_name if available, otherwise construct from first_name/last_name, or use UNI
+            if student.full_name:
+                display_name = student.full_name
+            elif student.user and student.user.first_name and student.user.last_name:
+                display_name = f"{student.user.first_name} {student.user.last_name}"
+            elif student.user:
+                display_name = student.user.uni
+            else:
+                display_name = "Unknown Student"
                 
             results.append(SearchResult(
                 result_type="student",
                 id=student.id,
-                display_name=student.full_name or "[First Last]",
+                display_name=display_name,
                 secondary_info=student.user.uni if student.user else "Unknown",
                 application_count=app_count
             ))

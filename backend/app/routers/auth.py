@@ -21,6 +21,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
         uni=user_in.uni,
         hashed_password=get_password_hash(user_in.password),
         role=user_in.role,
+        first_name=user_in.first_name,
+        last_name=user_in.last_name,
     )
     db.add(user)
     db.flush()

@@ -22,6 +22,8 @@ class TokenData(BaseModel):
 class UserBase(BaseModel):
     email: EmailStr
     uni: str = Field(min_length=6, max_length=7)
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 
 class UserCreate(UserBase):
