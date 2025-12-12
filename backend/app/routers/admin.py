@@ -13,7 +13,7 @@ from ..dependencies import get_current_admin
 from ..models import Assignment, Course, StudentCoursePreference, StudentProfile, Track, User, UserRole
 from ..schemas import (
     ApplicationDetail, AssignmentCreate, AssignmentDetails, CourseApplications,
-    CourseCreate, CourseRead, DashboardStats, EmailPayload, HighlightConflict,
+    CourseCreate, CourseRead, CourseUpdate, DashboardStats, EmailPayload, HighlightConflict,
     HighlightToggle, MatchRequest, MatchResult, SearchResult, StudentApplications,
 )
 from ..services.matching_engine import run_matching
@@ -190,13 +190,17 @@ def get_course_applications(course_id: int, db: Session = Depends(get_db), _: No
     assigned_pairs = {(a.student_id, a.course_id) for a in db.query(Assignment).filter(Assignment.course_id == course_id).all()}
     applications = sorted([_to_application_detail(pref, assigned_pairs) for pref in course.preferences], key=lambda x: x.rank)
     
+    # Calculate available vacancies
+    assignment_count = db.query(Assignment).filter(Assignment.course_id == course_id).count()
+    available_vacancies = course.vacancies - assignment_count
+    
     return CourseApplications(
         course_id=course.id,
         course_code=course.code,
         course_title=course.title,
-        instructor=course.instructor,
+        instructor=None,  # Deprecated field, kept for schema compatibility
         track=course.track,
-        vacancies=course.vacancies,
+        vacancies=available_vacancies,  # Show remaining vacancies
         total_applications=len(applications),
         highlighted_count=sum(1 for app in applications if app.highlighted),
         applications=applications
@@ -279,7 +283,24 @@ def get_highlight_conflicts(
 def create_course(course_in: CourseCreate, db: Session = Depends(get_db), _: None = Depends(get_current_admin)) -> Course:
     if db.query(Course).filter(Course.code == course_in.code).first():
         raise HTTPException(status_code=400, detail="Course already exists")
-    course = Course(**course_in.dict())
+    
+    course_data = course_in.dict()
+    
+    # Auto-populate instructor fields from professor if professor_id is provided
+    if course_data.get("professor_id"):
+        professor = db.query(User).filter(
+            User.id == course_data["professor_id"],
+            User.role == UserRole.PROFESSOR
+        ).first()
+        if professor:
+            # Build instructor name from first_name and last_name if available
+            if professor.first_name and professor.last_name:
+                course_data["instructor"] = f"{professor.first_name} {professor.last_name}"
+            else:
+                course_data["instructor"] = professor.uni
+            course_data["instructor_email"] = professor.email
+    
+    course = Course(**course_data)
     db.add(course)
     db.commit()
     db.refresh(course)
@@ -376,10 +397,24 @@ def create_assignment(
     
     if not student or not course:
         raise HTTPException(status_code=404, detail="Student or course not found")
-    if course.vacancies <= 0:
-        raise HTTPException(status_code=400, detail="No vacancies left")
     
-    course.vacancies -= 1
+    # Check if student is already assigned to ANY course
+    existing_assignment = db.query(Assignment).filter(Assignment.student_id == assignment_in.student_id).first()
+    if existing_assignment:
+        existing_course = db.query(Course).filter(Course.id == existing_assignment.course_id).first()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Student is already assigned as TA to {existing_course.code if existing_course else 'another course'}"
+        )
+    
+    # Check if course has available vacancies
+    current_assignments = db.query(Assignment).filter(Assignment.course_id == assignment_in.course_id).count()
+    if current_assignments >= course.vacancies:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No vacancies available for {course.code}. All {course.vacancies} positions are filled."
+        )
+    
     assignment = Assignment(
         student_id=assignment_in.student_id,
         course_id=assignment_in.course_id,
@@ -471,6 +506,104 @@ def _to_assignment_details(assignment: Assignment, db: Session) -> AssignmentDet
         instructor_email=course.instructor_email if course else None,
         highlight_conflicts=conflicts
     )
+
+
+# COURSE MANAGEMENT
+
+@router.put("/courses/{course_id}")
+def update_course(
+    course_id: int,
+    course_update: CourseUpdate,
+    db: Session = Depends(get_db),
+    _: None = Depends(get_current_admin)
+):
+    """Update an existing course"""
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Update only the fields that are provided
+    update_data = course_update.model_dump(exclude_unset=True)
+    
+    # If professor_id is being updated, validate the professor exists and auto-populate instructor fields
+    if "professor_id" in update_data:
+        if update_data["professor_id"] is not None:
+            professor = db.query(User).filter(
+                User.id == update_data["professor_id"],
+                User.role == UserRole.PROFESSOR
+            ).first()
+            if not professor:
+                raise HTTPException(status_code=404, detail="Professor not found")
+            
+            # Auto-populate instructor fields
+            if professor.first_name and professor.last_name:
+                update_data["instructor"] = f"{professor.first_name} {professor.last_name}"
+            else:
+                update_data["instructor"] = professor.uni
+            update_data["instructor_email"] = professor.email
+        else:
+            # If professor_id is being set to None, clear instructor fields
+            update_data["instructor"] = None
+            update_data["instructor_email"] = None
+    
+    # If code is being updated, check for duplicates
+    if "code" in update_data and update_data["code"] != course.code:
+        existing_course = db.query(Course).filter(
+            Course.code == update_data["code"],
+            Course.id != course_id
+        ).first()
+        if existing_course:
+            raise HTTPException(status_code=400, detail=f"Course code {update_data['code']} already exists")
+    
+    # Apply updates
+    for field, value in update_data.items():
+        setattr(course, field, value)
+    
+    db.commit()
+    db.refresh(course)
+    
+    return {
+        "message": "Course updated successfully",
+        "course": {
+            "id": course.id,
+            "code": course.code,
+            "title": course.title,
+            "track": course.track.value if course.track else None,
+            "vacancies": course.vacancies,
+            "grade_threshold": course.grade_threshold,
+            "similar_courses": course.similar_courses,
+            "professor_id": course.professor_id,
+        }
+    }
+
+
+@router.get("/courses")
+def list_all_courses(
+    db: Session = Depends(get_db),
+    _: None = Depends(get_current_admin)
+):
+    """Get all courses with their details"""
+    courses = db.query(Course).all()
+    
+    result = []
+    for course in courses:
+        # Count assignments for this course
+        assignment_count = db.query(Assignment).filter(Assignment.course_id == course.id).count()
+        available_vacancies = course.vacancies - assignment_count
+        
+        result.append({
+            "id": course.id,
+            "code": course.code,
+            "title": course.title,
+            "track": course.track.value if course.track else None,
+            "vacancies": available_vacancies,
+            "total_vacancies": course.vacancies,
+            "grade_threshold": course.grade_threshold,
+            "similar_courses": course.similar_courses,
+            "professor_id": course.professor_id,
+        })
+    
+    return result
 
 
 # PROFESSOR MANAGEMENT
@@ -580,7 +713,8 @@ def get_professor_courses(
                 "id": c.id,
                 "code": c.code,
                 "title": c.title,
-                "vacancies": c.vacancies,
+                "vacancies": c.vacancies - db.query(Assignment).filter(Assignment.course_id == c.id).count(),
+                "total_vacancies": c.vacancies,
             }
             for c in courses
         ],

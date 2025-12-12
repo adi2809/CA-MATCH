@@ -66,15 +66,28 @@ class CourseBase(BaseModel):
     code: str
     title: str
     instructor: Optional[str] = None
-    instructor_email: Optional[EmailStr] = None
+    instructor_email: Optional[str] = None
     track: Optional[Track] = None
     vacancies: int = 0
-    grade_threshold: Optional[str] = None  # ADD = None
-    similar_courses: Optional[str] = None  # ADD = None
+    grade_threshold: Optional[str] = None
+    similar_courses: Optional[str] = None
+    professor_id: Optional[int] = None
 
 
 class CourseCreate(CourseBase):
     pass
+
+
+class CourseUpdate(BaseModel):
+    code: Optional[str] = None
+    title: Optional[str] = None
+    instructor: Optional[str] = None
+    instructor_email: Optional[str] = None
+    track: Optional[Track] = None
+    vacancies: Optional[int] = None
+    grade_threshold: Optional[str] = None
+    similar_courses: Optional[str] = None
+    professor_id: Optional[int] = None
 
 
 class CourseRead(CourseBase):

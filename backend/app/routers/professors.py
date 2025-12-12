@@ -51,12 +51,16 @@ def get_professor_courses(
             Assignment.course_id == course.id
         ).count()
         
+        # Calculate available vacancies
+        available_vacancies = course.vacancies - assignment_count
+        
         result.append({
             "id": course.id,
             "code": course.code,
             "title": course.title,
             "track": course.track.value if course.track else None,
-            "vacancies": course.vacancies,
+            "vacancies": available_vacancies,  # Show remaining vacancies, not total
+            "total_vacancies": course.vacancies,  # Also include total for reference
             "application_count": application_count,
             "assignment_count": assignment_count,
         })
@@ -108,12 +112,16 @@ def get_course_applications(
             "is_assigned": is_assigned,
         })
     
+    # Calculate available vacancies
+    assignment_count = db.query(Assignment).filter(Assignment.course_id == course_id).count()
+    available_vacancies = course.vacancies - assignment_count
+    
     return {
         "course": {
             "id": course.id,
             "code": course.code,
             "title": course.title,
-            "vacancies": course.vacancies,
+            "vacancies": available_vacancies,  # Show remaining vacancies
         },
         "applications": result,
     }
@@ -151,12 +159,16 @@ def get_course_assignments(
             "status": assignment.status.value,
         })
     
+    # Calculate available vacancies
+    assignment_count = len(assignments)
+    available_vacancies = course.vacancies - assignment_count
+    
     return {
         "course": {
             "id": course.id,
             "code": course.code,
             "title": course.title,
-            "vacancies": course.vacancies,
+            "vacancies": available_vacancies,  # Show remaining vacancies
         },
         "assignments": result,
     }
@@ -187,7 +199,7 @@ def assign_student_to_course(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    # Check if already assigned
+    # Check if already assigned to THIS course
     existing = db.query(Assignment).filter(
         Assignment.student_id == student_id,
         Assignment.course_id == course_id
@@ -195,6 +207,27 @@ def assign_student_to_course(
     
     if existing:
         raise HTTPException(status_code=400, detail="Student is already assigned to this course")
+    
+    # Check if student is already assigned to ANY other course
+    other_assignment = db.query(Assignment).filter(
+        Assignment.student_id == student_id
+    ).first()
+    
+    if other_assignment:
+        other_course = db.query(Course).filter(Course.id == other_assignment.course_id).first()
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Student is already assigned as TA to {other_course.code if other_course else 'another course'}"
+        )
+    
+    # Check if course has available vacancies
+    current_assignments = db.query(Assignment).filter(Assignment.course_id == course_id).count()
+    
+    if current_assignments >= course.vacancies:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No vacancies available for {course.code}. All {course.vacancies} positions are filled."
+        )
     
     # Create assignment (Professor override - immediately confirmed)
     assignment = Assignment(
@@ -316,12 +349,18 @@ def search_students(
         student = db.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
         
         if student:
+            # Construct display name from User table first_name/last_name, fallback to UNI
+            if user.first_name and user.last_name:
+                display_name = f"{user.first_name} {user.last_name}"
+            else:
+                display_name = user.uni
+            
             results.append({
                 "student_id": student.id,
                 "user_id": user.id,
                 "uni": user.uni,
                 "email": user.email,
-                "full_name": student.full_name if student else None,
+                "full_name": display_name,
             })
     
     return results
